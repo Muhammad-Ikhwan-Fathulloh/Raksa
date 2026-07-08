@@ -52,76 +52,51 @@ asyncio.run(main())
 
 ---
 
-## Complete ESP32 Examples
+## Complete Examples & Machine Learning Features
 
-Full production-ready examples are available under the [`examples/`](examples/) folder:
+Full production-ready examples are available under the [`examples/`](examples/) folder, covering both hardware-specific scenarios and internal, Scikit-Learn-compatible Machine Learning algorithms:
 
+### Hardware-Connected Scenarios
 | File                                                    | Scenario                                   | Sensors                    |
 | ------------------------------------------------------- | ------------------------------------------ | -------------------------- |
 | [`main_edge.py`](examples/main_edge.py)                 | Quick-start minimalist (< 10 lines)        | —                          |
 | [`esp32_wifi_sensor.py`](examples/esp32_wifi_sensor.py) | ADC analog sensor + 3-class classification | LDR / MQ-x / Potentiometer |
 | [`esp32_dht_monitor.py`](examples/esp32_dht_monitor.py) | Temperature & humidity anomaly detection   | DHT11 / DHT22              |
 
-### ESP32 + ADC Sensor Classification (Snippet)
+### On-Device Machine Learning (NocML Port)
+| File                                                    | Algorithms Covered               | API Classes                                                         |
+| ------------------------------------------------------- | -------------------------------- | ------------------------------------------------------------------- |
+| [`ml_preprocessing.py`](examples/ml_preprocessing.py)   | Custom Data Scaling & Extensions | `MinMaxScaler`, `StandardScaler`, `PolynomialFeatures`              |
+| [`ml_classification.py`](examples/ml_classification.py) | Optimized Classifiers            | `KNN`, `NaiveBayes`, `LogisticRegression`, `DecisionTreeClassifier` |
+| [`ml_clustering.py`](examples/ml_clustering.py)         | Unsupervised Grouping / Fit      | `KMeans`                                                            |
+| [`ml_forecasting.py`](examples/ml_forecasting.py)       | Simple Time Series forecasting   | `LinearForecaster`                                                  |
 
-```python
-import machine, network, uasyncio as asyncio
-from raksa import RaksaClient
+---
 
-# WiFi
-wlan = network.WLAN(network.STA_IF)
-wlan.active(True)
-wlan.connect("YourSSID", "YourPassword")
+## Machine Learning Reference (NocML Equivalent)
 
-# Sensor & Model
-adc = machine.ADC(machine.Pin(34))
-adc.atten(machine.ADC.ATTN_11DB)
-model = ([[0.85, -0.30], [-0.20, 0.75], [0.10, 0.95]], [0.05, -0.10, 0.15])
-labels = {0: "Normal", 1: "Warning", 2: "Danger"}
+Raksa bundles a highly optimized port of the **NocML** C++ library, utilizing `@micropython.native` compiled mathematical loops to secure lightning-fast predictions directly on MicroPython edge boards without external dependencies or heavy resource bloat.
 
-async def main():
-    client = RaksaClient("ws://192.168.1.100:8000/ws/telemetry")
-    await client.connect()
-    while True:
-        raw = adc.read()
-        features = [raw / 4095.0, abs(raw / 4095.0 - 0.5)]
-        pred = client.infer(model, features)
-        cls = max(range(len(pred)), key=lambda i: pred[i])
-        await client.sync({"class": labels[cls], "features": features, "prediction": pred})
-        await asyncio.sleep(5)
+### Preprocessing
+- **`MinMaxScaler(dims, min_vals, max_vals)`**: Rescales variables to a range `[0.0 - 1.0]`.
+- **`StandardScaler(dims, means, stddevs)`**: Standardizes features using population mean and variance.
+- **`PolynomialFeatures(degree)`**: Expands input dimension using combinations with replacement.
 
-asyncio.run(main())
-```
+### Classification & Clustering
+- **`KNN(training_data, labels, num_samples, dims, k=3)`**: Traditional classification using Euclidean distances.
+- **`NaiveBayes(num_classes, dims, means, vars, priors)`**: Gaussian probabilistic classification.
+- **`LogisticRegression(dims, weights, bias)`**: Fast binary classification with `predict()` and `predict_proba()`.
+- **`DecisionTreeClassifier(nodes, num_nodes)`**: Node list traverse trees supporting dictionary, tuple, or custom node structures.
+- **`KMeans(k, dims, centroids)`**: Clusters features into centroids. Supports `run(data, num_samples)` for on-device fitting.
 
-### ESP32 + DHT22 Anomaly Detection (Snippet)
+### Forecasting
+- **`LinearForecaster()`**: Computes simple linear regressive trends ($y=mx+c$) natively via `fit(x, y)` and `forecastNext()`.
 
-```python
-import machine, dht, network, uasyncio as asyncio
-from raksa import RaksaClient
+---
 
-# WiFi
-wlan = network.WLAN(network.STA_IF)
-wlan.active(True)
-wlan.connect("YourSSID", "YourPassword")
+## Acknowledgments & Credits
 
-# DHT22 Sensor & Anomaly Model
-sensor = dht.DHT22(machine.Pin(4))
-model = ([[0.60, -0.35], [-0.45, 0.80]], [0.20, -0.15])
-
-async def main():
-    client = RaksaClient("ws://192.168.1.100:8000/ws/telemetry")
-    await client.connect()
-    while True:
-        sensor.measure()
-        temp, hum = sensor.temperature(), sensor.humidity()
-        features = [(temp - 15) / 35, (hum - 20) / 75]  # Normalize
-        pred = client.infer(model, features)
-        status = "ANOMALY" if pred[1] > pred[0] else "NORMAL"
-        await client.sync({"temp": temp, "hum": hum, "status": status, "prediction": pred})
-        await asyncio.sleep(10)
-
-asyncio.run(main())
-```
+The machine learning capabilities contained in Raksa are ported from the [NocML C++ Library for Arduino](https://github.com/Nocturnailed-Community/NocML), developed by Muhammad Ikhwan Fathulloh. Special credits go to the original creators for providing the foundation of these resource-constrained edge execution algorithms.
 
 ---
 

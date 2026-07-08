@@ -54,76 +54,51 @@ asyncio.run(main())
 
 ---
 
-## Contoh Lengkap ESP32
+## Contoh Lengkap & Fitur Machine Learning
 
-Contoh siap-pakai tersedia di folder [`examples/`](examples/):
+Contoh siap-pakai tersedia di folder [`examples/`](examples/), mencakup skenario integrasi sensor hardware dan penggunaan algoritma Machine Learning yang kompatibel dengan Scikit-Learn:
 
+### Skenario Koneksi Perangkat Keras
 | File                                                    | Skenario                                | Sensor                     |
 | ------------------------------------------------------- | --------------------------------------- | -------------------------- |
 | [`main_edge.py`](examples/main_edge.py)                 | Quick-start minimalis (< 10 baris)      | —                          |
-| [`esp32_wifi_sensor.py`](examples/esp32_wifi_sensor.py) | Sensor analog ADC + klasifikasi 3 kelas | LDR / MQ-x / Potensiometer |
+| [`esp32_wifi_sensor.py`](examples/esp32_wifi_sensor.py) | Sensor analog ADC + Klasifikasi 3 Kelas | LDR / MQ-x / Potensiometer |
 | [`esp32_dht_monitor.py`](examples/esp32_dht_monitor.py) | Deteksi anomali suhu & kelembaban       | DHT11 / DHT22              |
 
-### ESP32 + Sensor ADC + Klasifikasi (Cuplikan)
+### Machine Learning On-Device (Porting NocML)
+| File                                                    | Algoritma Yang Tersedia           | Kelas API                                                           |
+| ------------------------------------------------------- | --------------------------------- | ------------------------------------------------------------------- |
+| [`ml_preprocessing.py`](examples/ml_preprocessing.py)   | Penskalaan & Ekstensi Data Sensor | `MinMaxScaler`, `StandardScaler`, `PolynomialFeatures`              |
+| [`ml_classification.py`](examples/ml_classification.py) | Model Klasifikasi Teroptimasi     | `KNN`, `NaiveBayes`, `LogisticRegression`, `DecisionTreeClassifier` |
+| [`ml_clustering.py`](examples/ml_clustering.py)         | Pengelompokan Data (Unsupervised) | `KMeans`                                                            |
+| [`ml_forecasting.py`](examples/ml_forecasting.py)       | Peramalan Tren Deret Waktu        | `LinearForecaster`                                                  |
 
-```python
-import machine, network, uasyncio as asyncio
-from raksa import RaksaClient
+---
 
-# WiFi
-wlan = network.WLAN(network.STA_IF)
-wlan.active(True)
-wlan.connect("SSID_Anda", "Password_Anda")
+## Panduan Referensi Machine Learning (Ekuivalen NocML)
 
-# Sensor & Model
-adc = machine.ADC(machine.Pin(34))
-adc.atten(machine.ADC.ATTN_11DB)
-model = ([[0.85, -0.30], [-0.20, 0.75], [0.10, 0.95]], [0.05, -0.10, 0.15])
-label = {0: "Normal", 1: "Peringatan", 2: "Bahaya"}
+Raksa mengintegrasikan porting dari library C++ **NocML** yang telah dioptimalkan secara mendalam menggunakan akselerasi `@micropython.native` kelas-kompilasi untuk memproses prediksi cepat secara lokal pada papan edge MicroPython tanpa beban memori tinggi ataupun dependensi berat.
 
-async def main():
-    client = RaksaClient("ws://192.168.1.100:8000/ws/telemetry")
-    await client.connect()
-    while True:
-        raw = adc.read()
-        fitur = [raw / 4095.0, abs(raw / 4095.0 - 0.5)]
-        pred = client.infer(model, fitur)
-        kls = max(range(len(pred)), key=lambda i: pred[i])
-        await client.sync({"kelas": label[kls], "fitur": fitur, "prediksi": pred})
-        await asyncio.sleep(5)
+### Preprocessing
+- **`MinMaxScaler(dims, min_vals, max_vals)`**: Menyesuaikan skala fitur ke rentang `[0.0 - 1.0]`.
+- **`StandardScaler(dims, means, stddevs)`**: Menstandardisasikan fitur menggunakan populasi mean dan varians (mean=0, std=1).
+- **`PolynomialFeatures(degree)`**: Mengekspansi dimensi fitur menjadi kombinasi orde terpilih.
 
-asyncio.run(main())
-```
+### Klasifikasi & Clustering
+- **`KNN(training_data, labels, num_samples, dims, k=3)`**: Klasifikasi berbasis perbandingan jarak Euclidean tetangga terdekat.
+- **`NaiveBayes(num_classes, dims, means, vars, priors)`**: Klasifikasi berbasis peluang Gaussian.
+- **`LogisticRegression(dims, weights, bias)`**: Model keputusan biner super cepat dengan metode `predict()` dan `predict_proba()`.
+- **`DecisionTreeClassifier(nodes, num_nodes)`**: Penelusuran pohon keputusan mendukung struktur list bertipe dict, tuple, atau class node.
+- **`KMeans(k, dims, centroids)`**: Mengelompokkan titik data ke centroid terdekat. Mendukung fungsi `run(data, num_samples)` untuk latihan lokal langsung.
 
-### ESP32 + DHT22 Deteksi Anomali (Cuplikan)
+### Peramalan (Forecasting)
+- **`LinearForecaster()`**: Melakukan fitting regresi linear sederhana ($y=mx+c$) melalui `fit(x, y)` dan memproyeksikan deret menit depan via `forecastNext()`.
 
-```python
-import machine, dht, network, uasyncio as asyncio
-from raksa import RaksaClient
+---
 
-# WiFi
-wlan = network.WLAN(network.STA_IF)
-wlan.active(True)
-wlan.connect("SSID_Anda", "Password_Anda")
+## Apresiasi & Sumber Pengembangan
 
-# Sensor DHT22 & Model Anomali
-sensor = dht.DHT22(machine.Pin(4))
-model = ([[0.60, -0.35], [-0.45, 0.80]], [0.20, -0.15])
-
-async def main():
-    client = RaksaClient("ws://192.168.1.100:8000/ws/telemetry")
-    await client.connect()
-    while True:
-        sensor.measure()
-        suhu, hum = sensor.temperature(), sensor.humidity()
-        fitur = [(suhu - 15) / 35, (hum - 20) / 75]  # Normalisasi
-        pred = client.infer(model, fitur)
-        status = "ANOMALI" if pred[1] > pred[0] else "NORMAL"
-        await client.sync({"suhu": suhu, "kelembaban": hum, "status": status, "prediksi": pred})
-        await asyncio.sleep(10)
-
-asyncio.run(main())
-```
+Kemampuan Machine Learning di dalam library Raksa ini diporting langsung dari [NocML C++ Library for Arduino](https://github.com/Nocturnailed-Community/NocML) yang diciptakan oleh Muhammad Ikhwan Fathulloh. Terima kasih sebesar-besarnya kepada tim pengembang asli atas kontribusi algoritma edge cerdas berkinerja tinggi ini.
 
 ---
 
