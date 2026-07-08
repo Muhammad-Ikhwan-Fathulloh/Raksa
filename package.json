@@ -1,0 +1,11 @@
+{
+    "version": "0.1.0",
+    "description": "MicroPython client library for In-situ Analytics and WebSocket communication with FastAPI",
+    "urls": [
+        [
+            "raksa.py",
+            "raksa.py"
+        ]
+    ],
+    "deps": []
+}

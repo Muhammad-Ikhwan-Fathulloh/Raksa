@@ -1,0 +1,58 @@
+# Raksa 🛡️
+
+[English Version](README.md)
+
+**Raksa** (diambil dari bahasa Sansekerta/Indonesia yang berarti *Pelindung* atau *Penjaga*) adalah library MicroPython persistensi-tinggi yang dirancang khusus untuk ekosistem **Noc Lab** dalam workshop **'Tiny Chip, Big Brain'**. Library ini bertindak sebagai jembatan *In-situ Analytics* ujung-ke-ujung (end-to-end) yang mengamankan aliran data telemetry dari perangkat edge (ESP32/RP2040) menuju FastAPI cloud backend secara asinkron.
+
+Dengan performa komputasi native (`@micropython.native`) untuk inferensi model *on-device* dan mekanisme pembersihan memori agresif (`gc.collect()`), Raksa melestarikan stabilitas RAM perangkat mikro Anda dari fragmentasi heap di kala menjalankan beban kerja TinyML secara terus-menerus.
+
+---
+
+## Fitur Utama
+- 🔄 **Persistensi WebSocket Mandiri**: Handshake RFC 6455 internal berbasis soket asinkron `uasyncio` tanpa membebani memori dengan library eksternal.
+- ⚡ **In-situ Analytics Cepat**: Eksekusi algoritma inferensi TinyML didukung akselerasi `@micropython.native` untuk meminimalkan latensi.
+- 🧹 **Konsolidasi Memori Dinamis**: Pemanggilan Garbage Collector terarah di setiap siklus pengiriman mencegah fragmentasi RAM/out-of-memory.
+- 🇮🇩 **Arsitektur Nusantara Tangguh**: Konsep penjaga data yang mengedepankan efisiensi, ketangguhan mandiri, dan integrasi erat edge-to-cloud.
+
+---
+
+## Cara Instalasi via `mip`
+
+### 1. Menggunakan `mpremote` (Direkomendasikan)
+Hubungkan perangkat Anda ke PC via USB, kemudian jalankan perintah berikut:
+```bash
+mpremote mip install github:Muhammad-Ikhwan-Fathulloh/Raksa
+```
+
+### 2. Memasang langsung via REPL MicroPython
+Pastikan board Anda memiliki koneksi Wi-Fi yang aktif, lalu jalankan perintah berikut di REPL:
+```python
+import mip
+mip.install("github:Muhammad-Ikhwan-Fathulloh/Raksa")
+```
+
+---
+
+## Contoh Kode Penggunaan Minimalis (ESP32)
+
+Berikut adalah contoh skenario In-situ Analytics & sinkronisasi data ke cloud backend dalam kurang dari 10 baris kode fungsional:
+
+```python
+import uasyncio as asyncio
+from raksa import RaksaClient
+
+async def main():
+    client = RaksaClient("ws://192.168.1.100:8000/ws/telemetry")
+    model = ([[0.5, -0.2], [0.1, 0.9]], [0.1, 0.0]) # Matriks weight & bias TinyML
+    inputs = [0.8, 1.5] # Data sensor mentah
+    
+    pred = client.infer(model, inputs)
+    await client.sync({"model": "NocML_V1", "features": inputs, "prediction": pred})
+
+asyncio.run(main())
+```
+
+---
+
+## Lisensi & Hak Cipta
+Dikembangkan oleh **Noc Lab** untuk mendukung edukasi perangkat keras TinyML di Indonesia. Dilindungi oleh Lisensi MIT.

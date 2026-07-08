@@ -1,0 +1,26 @@
+# MicroPython build & compiler outputs
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Temporary test logs and traces
+*.log
+error.txt
+traceback.txt
+test_out.log
+direct_verify.log
+run_direct.py
+
+# Local development environments
+.env
+venv/
+.venv/
+env/
+
+# IDE editors settings
+.vscode/
+.idea/
+.project
+.pydevproject
+.settings/
