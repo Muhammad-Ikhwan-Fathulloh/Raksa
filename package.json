@@ -1,10 +1,30 @@
 {
-    "version": "0.1.0",
+    "version": "0.2.1",
     "description": "MicroPython client library for In-situ Analytics and WebSocket communication with FastAPI",
     "urls": [
         [
-            "raksa.py",
-            "raksa.py"
+            "raksa/__init__.py",
+            "raksa/__init__.py"
+        ],
+        [
+            "raksa/client.py",
+            "raksa/client.py"
+        ],
+        [
+            "raksa/preprocessing.py",
+            "raksa/preprocessing.py"
+        ],
+        [
+            "raksa/models.py",
+            "raksa/models.py"
+        ],
+        [
+            "raksa/neural.py",
+            "raksa/neural.py"
+        ],
+        [
+            "raksa/evaluation.py",
+            "raksa/evaluation.py"
         ]
     ],
     "deps": []

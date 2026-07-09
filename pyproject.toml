@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "raksa"
+version = "0.2.1"
+description = "MicroPython client library for In-situ Analytics and WebSocket communication with FastAPI"
+readme = "README.md"
+requires-python = ">=3.7"
+license = {text = "MIT"}
+authors = [
+    {name = "Noc Lab"}
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: Implementation :: MicroPython",
+    "License :: OSI Approved :: MIT License",
+]
+dependencies = []
+
+[tool.setuptools]
+packages = ["raksa"]
